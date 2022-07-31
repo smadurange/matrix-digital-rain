@@ -1,0 +1,11 @@
+# automake
+config.h.in*
+aclocal.m4
+Makefile.in
+configure
+configure~
+m4/*
+build/*
+autom4te.cache/*
+
+**/*a.out

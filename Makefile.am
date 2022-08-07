@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
 
-bin_PROGRAMS = matrix
+bin_PROGRAMS = amx
 
-matrix_SOURCES = src/main.c  
+amx_SOURCES = src/main.c  

@@ -21,7 +21,10 @@ Pure C implementation of the famous [digital rain](https://en.wikipedia.org/wiki
 
 ## Customisation
 
- - Character set: set `UNICODE_MIN` and `UNICODE_MAX` for the [unicode block](https://en.wikipedia.org/wiki/List_of_Unicode_characters) you like to use (e.g. 0x30A1 and 0x30F6 for Katakana).
+ - Character set: set `UNICODE_MIN` and `UNICODE_MAX` for the [unicode block](https://en.wikipedia.org/wiki/List_of_Unicode_characters) you like to use (e.g. 0x30A1 and 0x30F6 for Katakana):
+
+![example](katakana.png)
+
  - Colours: set the RGB values of `COLOR_BG_*`, `COLOR_HD_*` and `COLOR_TL_*` for background, head and the tail characters respectively.
  - Rain attributes: set `RAIN_RATE` and `RAIN_DENSITY` to change the speed and the density of the rain. 
 
@@ -38,4 +41,4 @@ make
 
 ## Contributing
 
-Code is hosted on [sourcehut](https://git.sr.ht/~sadeep/matrix-digital-rain). Please submit your patches there or via email to sadeep@asciimx.com ([PGP key](http://www.asciimx.com/sadeep.asc)).
+Code is hosted on [sourcehut](https://git.sr.ht/~sadeep/matrix-digital-rain). Please submit your patches there or via email to ~sadeep/matrix-code-rain@lists.sr.ht.

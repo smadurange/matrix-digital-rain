@@ -38,7 +38,3 @@ cd build/
 make
 ./amx
 ```
-
-## Contributing
-
-Code is hosted on [sourcehut](https://git.sr.ht/~sadeep/matrix-digital-rain). Please submit your patches there or via email to ~sadeep/matrix-code-rain@lists.sr.ht.

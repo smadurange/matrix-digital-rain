@@ -14,7 +14,6 @@
 #define UNICODE_MIN 0x0021
 #define UNICODE_MAX 0x007E
 
-#define RAIN_RATE 60
 #define RAIN_DENSITY 0.6
 
 #define COLOR_BG_RED 0
@@ -65,6 +64,7 @@ static void shuffle(size_t *a, size_t n) {
 
 	for (i = n - 1; i > 0; i--) {
 		j = rand() % (i + 1);
+
 		a[j] = a[i] ^ a[j];
 		a[i] = a[i] ^ a[j];
 		a[j] = a[i] ^ a[j];
@@ -78,16 +78,19 @@ static int mat_init(matrix *mat, const struct winsize *ws) {
 	mat->rows = ws->ws_row + 1;
 
 	mat->code = realloc(mat->code, sizeof mat->code[0] * mat->rows * mat->cols);
+
 	if (!mat->code)
 		return 0;
 
 	mat->rgb = realloc(mat->rgb, sizeof mat->rgb[0] * mat->rows * mat->cols);
+
 	if (!mat->rgb) {
 		free(mat->code);
 		return 0;
 	}
 
 	mat->shade = realloc(mat->shade, sizeof mat->shade[0] * mat->cols);
+
 	if (!mat->shade) {
 		free(mat->code);
 		free(mat->rgb);
@@ -95,6 +98,7 @@ static int mat_init(matrix *mat, const struct winsize *ws) {
 	}
 
 	mat->col = realloc(mat->col, sizeof mat->col[0] * mat->cols);
+
 	if (!mat->col) {
 		free(mat->code);
 		free(mat->rgb);
@@ -103,6 +107,7 @@ static int mat_init(matrix *mat, const struct winsize *ws) {
 	}
 
 	mat->row = realloc(mat->row, sizeof mat->row[0] * mat->cols);
+
 	if (!mat->row) {
 		free(mat->code);
 		free(mat->rgb);
@@ -118,6 +123,7 @@ static int mat_init(matrix *mat, const struct winsize *ws) {
 	}
 
 	shuffle(mat->col, mat->cols);
+
 	return 1;
 }
 
@@ -126,6 +132,7 @@ static void mat_reset_head(matrix *mat, size_t row, size_t col) {
 
 	sc = mat->rgb[mat_idx(mat, 0, col)].color;
 	tc = mat->rgb[mat_idx(mat, row, col)].color;
+
 	tc[red] = sc[red];
 	tc[green] = sc[green];
 	tc[blue] = sc[blue];
@@ -135,6 +142,7 @@ static void mat_set_tail(matrix *mat, size_t row, size_t col) {
 	unsigned char *color;
 
 	color = mat->rgb[mat_idx(mat, row, col)].color;
+
 	color[red] = COLOR_TL_RED;
 	color[green] = COLOR_TL_GRN;
 	color[blue] = COLOR_TL_BLU;
@@ -146,6 +154,7 @@ static void mat_set_head(matrix *mat, size_t row, size_t col) {
 	color = mat->rgb[mat_idx(mat, row, col)].color;
 	color[red] = COLOR_HD_RED;
 	color[green] = COLOR_HD_GRN;
+
 	color[blue] = COLOR_HD_BLU;
 }
 
@@ -153,6 +162,7 @@ static void mat_shade(matrix *mat, size_t row, size_t col) {
 	unsigned char *color;
 
 	color = mat->rgb[mat_idx(mat, row, col)].color;
+
 	color[red] = color[red] - (color[red] - COLOR_BG_RED) / 2;
 	color[green] = color[green] - (color[green] - COLOR_BG_GRN) / 2;
 	color[blue] = color[blue] - (color[blue] - COLOR_BG_BLU) / 2;
@@ -171,16 +181,21 @@ static int term_init() {
 
 	if (tcgetattr(STDIN_FILENO, &ta) == 0) {
 		ta.c_lflag &= ~ECHO;
+
 		if (tcsetattr(STDIN_FILENO, TCSANOW, &ta) == 0) {
 			wprintf(L"\x1b[48;2;%d;%d;%dm", COLOR_BG_RED, COLOR_BG_GRN, COLOR_BG_BLU);
+
 			wprintf(L"%s", ANSI_FONT_BOLD);
 			wprintf(L"%s", ANSI_CUR_HIDE);
 			wprintf(L"%s", ANSI_CUR_RESET);
 			wprintf(L"%s", ANSI_SCRN_CLEAR);
+
 			setvbuf(stdout, 0, _IOFBF, 0);
+
 			return 1;
 		}
 	}
+
 	return 0;
 }
 
@@ -194,9 +209,11 @@ static void term_reset() {
 
 	if (tcgetattr(STDIN_FILENO, &ta) == 0) {
 		ta.c_lflag |= ECHO;
+
 		if (tcsetattr(STDIN_FILENO, TCSANOW, &ta) != 0)
 			perror("term_reset()");
 	}
+
 	setvbuf(stdout, 0, _IOLBF, 0);
 }
 
@@ -208,6 +225,7 @@ static void term_print(const matrix *mat, size_t row, size_t col) {
 	size_t idx;
 
 	idx = mat_idx(mat, row, col);
+
 	wprintf(L"\x1b[%d;%dH\x1b[38;2;%d;%d;%dm%lc", row, col,
 	        mat->rgb[idx].color[red], mat->rgb[idx].color[green],
 	        mat->rgb[idx].color[blue], mat->code[idx]);
@@ -228,7 +246,6 @@ static void handle_signal(int sa) {
 int main(int argc, char *argv[]) {
 	matrix mat;
 	struct winsize ws;
-	struct timespec ts;
 	struct sigaction sa;
 	size_t i, j, len, maxlen;
 
@@ -245,17 +262,17 @@ int main(int argc, char *argv[]) {
 		return 1;
 
 	term_size(&ws);
+
 	mat = (matrix){0};
+
 	if (!mat_init(&mat, &ws)) {
 		term_reset();
 		return 1;
 	}
 
-	ts.tv_sec = RAIN_RATE / 1000;
-	ts.tv_nsec = (RAIN_RATE % 1000) * 1000000;
-
 	run = 1, len = 1;
 	maxlen = mat.cols * RAIN_DENSITY;
+
 	while (run) {
 		for (i = 0; run && i < len; i++) {
 			if (mat.row[i] == mat.rows) {
@@ -263,37 +280,48 @@ int main(int argc, char *argv[]) {
 				term_print(&mat, mat.rows - 1, mat.col[i]);
 				mat.row[i] = 0;
 			}
+
 			if (mat.shade[i] == 0) {
 				if (mat.row[i] > 0) {
 					mat_set_tail(&mat, mat.row[i] - 1, mat.col[i]);
 					term_print(&mat, mat.row[i] - 1, mat.col[i]);
 				}
+
 				mat_set_head(&mat, mat.row[i], mat.col[i]);
 				mat_put_code(&mat, mat.row[i], mat.col[i]);
 				term_print(&mat, mat.row[i], mat.col[i]);
+
 				if (mat.row[i] > 0 && rand() % 6 == 0) {
 					j = rand() % mat.row[i];
+
 					if (mat.code[mat_idx(&mat, j, mat.col[i])] != ' ') {
 						mat_put_code(&mat, j, mat.col[i]);
 						term_print(&mat, j, mat.col[i]);
 					}
 				}
+
 				if (mat.row[i] == mat.rows - 1)
 					mat.shade[i] = 1;
+
 				mat.row[i]++;
 			} else if (mat.shade[i] == 1 || mat.shade[i] == 2) {
 				mat_shade(&mat, mat.row[i], mat.col[i]);
 				term_print(&mat, mat.row[i], mat.col[i]);
+
 				if (mat.row[i] == mat.rows - 1)
 					mat.shade[i]++;
+
 				mat.row[i]++;
 			} else {
 				mat.code[mat_idx(&mat, mat.row[i], mat.col[i])] = ' ';
 				term_print(&mat, mat.row[i], mat.col[i]);
+
 				if (mat.row[i] == mat.rows - 1) {
 					mat.row[i] = 0;
 					mat.shade[i] = 0;
+
 					j = rand() % (mat.cols - maxlen) + maxlen;
+
 					mat.col[i] = mat.col[i] ^ mat.col[j];
 					mat.col[j] = mat.col[i] ^ mat.col[j];
 					mat.col[i] = mat.col[i] ^ mat.col[j];
@@ -301,16 +329,19 @@ int main(int argc, char *argv[]) {
 					mat.row[i]++;
 			}
 		}
+
 		if (len < maxlen &&
 		    mat.row[len - 1] >= rand() % (int)(mat.rows * 0.25)) {
 			mat.row[len] = 0;
 			mat.shade[len++] = 0;
 		}
+
 		fflush(stdout);
-		nanosleep(&ts, &ts);
+		usleep(50000);
 	}
 
 	term_reset();
 	mat_free(&mat);
+
 	return 0;
 }

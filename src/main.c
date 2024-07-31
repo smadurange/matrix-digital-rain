@@ -64,7 +64,6 @@ static void shuffle(size_t *a, size_t n) {
 
 	for (i = n - 1; i > 0; i--) {
 		j = rand() % (i + 1);
-
 		a[j] = a[i] ^ a[j];
 		a[i] = a[i] ^ a[j];
 		a[j] = a[i] ^ a[j];
@@ -123,7 +122,6 @@ static int mat_init(matrix *mat, const struct winsize *ws) {
 	}
 
 	shuffle(mat->col, mat->cols);
-
 	return 1;
 }
 
@@ -191,7 +189,6 @@ static int term_init() {
 			wprintf(L"%s", ANSI_SCRN_CLEAR);
 
 			setvbuf(stdout, 0, _IOFBF, 0);
-
 			return 1;
 		}
 	}
@@ -209,7 +206,6 @@ static void term_reset() {
 
 	if (tcgetattr(STDIN_FILENO, &ta) == 0) {
 		ta.c_lflag |= ECHO;
-
 		if (tcsetattr(STDIN_FILENO, TCSANOW, &ta) != 0)
 			perror("term_reset()");
 	}
@@ -293,7 +289,6 @@ int main(int argc, char *argv[]) {
 
 				if (mat.row[i] > 0 && rand() % 6 == 0) {
 					j = rand() % mat.row[i];
-
 					if (mat.code[mat_idx(&mat, j, mat.col[i])] != ' ') {
 						mat_put_code(&mat, j, mat.col[i]);
 						term_print(&mat, j, mat.col[i]);
@@ -321,7 +316,6 @@ int main(int argc, char *argv[]) {
 					mat.shade[i] = 0;
 
 					j = rand() % (mat.cols - maxlen) + maxlen;
-
 					mat.col[i] = mat.col[i] ^ mat.col[j];
 					mat.col[j] = mat.col[i] ^ mat.col[j];
 					mat.col[i] = mat.col[i] ^ mat.col[j];

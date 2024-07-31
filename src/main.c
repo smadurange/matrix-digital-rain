@@ -173,7 +173,6 @@ static int term_init() {
 			return 1;
 		}
 	}
-
 	return 0;
 }
 
@@ -222,6 +221,7 @@ static void handle_signal(int sa) {
 
 int main(int argc, char *argv[]) {
 	matrix mat;
+
 	struct winsize ws;
 	struct sigaction sa;
 	size_t i, j, len, maxlen;

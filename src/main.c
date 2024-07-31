@@ -77,43 +77,24 @@ static int mat_init(matrix *mat, const struct winsize *ws) {
 	mat->rows = ws->ws_row + 1;
 
 	mat->code = realloc(mat->code, sizeof mat->code[0] * mat->rows * mat->cols);
-
 	if (!mat->code)
 		return 0;
 
 	mat->rgb = realloc(mat->rgb, sizeof mat->rgb[0] * mat->rows * mat->cols);
-
-	if (!mat->rgb) {
-		free(mat->code);
+	if (!mat->rgb)
 		return 0;
-	}
 
 	mat->shade = realloc(mat->shade, sizeof mat->shade[0] * mat->cols);
-
-	if (!mat->shade) {
-		free(mat->code);
-		free(mat->rgb);
+	if (!mat->shade)
 		return 0;
-	}
 
 	mat->col = realloc(mat->col, sizeof mat->col[0] * mat->cols);
-
-	if (!mat->col) {
-		free(mat->code);
-		free(mat->rgb);
-		free(mat->shade);
+	if (!mat->col)
 		return 0;
-	}
 
 	mat->row = realloc(mat->row, sizeof mat->row[0] * mat->cols);
-
-	if (!mat->row) {
-		free(mat->code);
-		free(mat->rgb);
-		free(mat->col);
-		free(mat->shade);
+	if (!mat->row)
 		return 0;
-	}
 
 	for (i = 0; i < mat->cols; i++) {
 		mat->row[i] = 0;
@@ -260,7 +241,6 @@ int main(int argc, char *argv[]) {
 	term_size(&ws);
 
 	mat = (matrix){0};
-
 	if (!mat_init(&mat, &ws)) {
 		term_reset();
 		return 1;

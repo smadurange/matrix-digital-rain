@@ -14,17 +14,17 @@
 
 #define RHO         0.4 /* Rain density */
 
-#define RGB_BG_RED    0 /* RGB values of the background */
-#define RGB_BG_GRN    0
-#define RGB_BG_BLU    0
+#define RGB_BG_RED   34 /* RGB values of the background */
+#define RGB_BG_GRN   34
+#define RGB_BG_BLU   34
 
 #define RGB_HD_RED  255 /* RGB values of the first drop */
 #define RGB_HD_GRN  255
 #define RGB_HD_BLU  255
 
-#define RGB_TL_RED   40 /* RGB values of the foreground */
-#define RGB_TL_GRN  254
-#define RGB_TL_BLU   20
+#define RGB_TL_RED    0 /* RGB values of the foreground */
+#define RGB_TL_GRN  177
+#define RGB_TL_BLU   64
 
 #define ANSI_CUR_HIDE    "\e[?25l"
 #define ANSI_CUR_SHOW    "\e[?25h"

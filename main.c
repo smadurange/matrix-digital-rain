@@ -37,7 +37,7 @@ enum {
 	R, /* Red */
 	G, /* Green */
 	B, /* Blue */ 
-	D  /* Phosphor decay multiplier */
+	M  /* Phosphor decay multiplier */
 };
 
 typedef union color_tag {
@@ -52,7 +52,6 @@ typedef struct matrix_tag {
 	size_t *row;
 	color *rgb;
 	wchar_t *code;
-	char *shade;
 } matrix;
 
 static size_t mat_idx(const matrix *mat, size_t row, size_t col)
@@ -95,11 +94,6 @@ static int mat_init(matrix *mat, const struct winsize *ws)
 	if (!mat->rgb)
 		return 0;
 
-	mat->shade = realloc(mat->shade,
-		sizeof mat->shade[0] * mat->cols);
-	if (!mat->shade)
-		return 0;
-
 	mat->col = realloc(mat->col, sizeof mat->col[0] * mat->cols);
 	if (!mat->col)
 		return 0;
@@ -111,7 +105,6 @@ static int mat_init(matrix *mat, const struct winsize *ws)
 	for (i = 0; i < mat->cols; i++) {
 		mat->row[i] = 0;
 		mat->col[i] = i;
-		mat->shade[i] = 0;
 	}
 
 	shuffle(mat->col, mat->cols);
@@ -166,7 +159,6 @@ static void mat_free(matrix *mat)
 	free(mat->col);
 	free(mat->row);
 	free(mat->rgb);
-	free(mat->shade);
 }
 
 static int term_init() 
@@ -274,7 +266,7 @@ int main(int argc, char *argv[])
 				mat.row[i] = 0;
 			}
 
-			if (mat.shade[i] == 0) {
+			if (mat.rgb[i].color[M] == 0) {
 				if (mat.row[i] > 0) {
 					mat_set_tail(&mat, mat.row[i] - 1, mat.col[i]);
 					term_print(&mat, mat.row[i] - 1, mat.col[i]);
@@ -293,15 +285,15 @@ int main(int argc, char *argv[])
 				}
 
 				if (mat.row[i] == mat.rows - 1)
-					mat.shade[i] = 1;
+					mat.rgb[i].color[M] = 1;
 
 				mat.row[i]++;
-			} else if (mat.shade[i] == 1 || mat.shade[i] == 2) {
+			} else if (mat.rgb[i].color[M] == 1 || mat.rgb[i].color[M] == 2) {
 				mat_decay(&mat, mat.row[i], mat.col[i]);
 				term_print(&mat, mat.row[i], mat.col[i]);
 
 				if (mat.row[i] == mat.rows - 1)
-					mat.shade[i]++;
+					mat.rgb[i].color[M]++;
 
 				mat.row[i]++;
 			} else {
@@ -310,8 +302,7 @@ int main(int argc, char *argv[])
 
 				if (mat.row[i] == mat.rows - 1) {
 					mat.row[i] = 0;
-					mat.shade[i] = 0;
-
+					mat.rgb[i].color[M] = 0;
 					j = rand() % (mat.cols - maxlen) + maxlen;
 					mat.col[i] = mat.col[i] ^ mat.col[j];
 					mat.col[j] = mat.col[i] ^ mat.col[j];
@@ -324,7 +315,7 @@ int main(int argc, char *argv[])
 		if (len < maxlen &&
 		    mat.row[len - 1] >= rand() % (int)(mat.rows * 0.25)) {
 			mat.row[len] = 0;
-			mat.shade[len++] = 0;
+			mat.rgb[len++].color[M] = 0;
 		}
 
 		fflush(stdout);

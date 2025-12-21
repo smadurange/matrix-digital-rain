@@ -9,3 +9,4 @@ build/*
 autom4te.cache/*
 
 **/*a.out
+**/vim.core

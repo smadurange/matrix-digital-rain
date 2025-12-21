@@ -1,5 +1,3 @@
-#define _XOPEN_SOURCE 700
-
 #include <locale.h>
 #include <signal.h>
 #include <stdint.h>
@@ -14,7 +12,7 @@
 #define UNICODE_MIN 0x0021
 #define UNICODE_MAX 0x007E
 
-#define RAIN_DENSITY 0.6
+#define RAIN_DENSITY 0.4
 
 #define COLOR_BG_RED 0
 #define COLOR_BG_GRN 0
@@ -207,10 +205,15 @@ static void term_print(const matrix *mat, size_t row, size_t col) {
 	        mat->rgb[idx].color[blue], mat->code[idx]);
 }
 
+
+volatile int resize = 0;
 static volatile int run;
 
 static void handle_signal(int sa) {
 	switch (sa) {
+	case SIGWINCH:
+    resize = 1;
+    break;
 	case SIGINT:
 	case SIGQUIT:
 	case SIGTERM:
@@ -238,6 +241,7 @@ int main(int argc, char *argv[]) {
 	if (!term_init())
 		return 1;
 
+winsz:
 	term_size(&ws);
 
 	mat = (matrix){0};
@@ -251,6 +255,9 @@ int main(int argc, char *argv[]) {
 
 	while (run) {
 		for (i = 0; run && i < len; i++) {
+      if (resize)
+        goto winsz;
+
 			if (mat.row[i] == mat.rows) {
 				mat_reset_head(&mat, mat.row[i] - 1, mat.col[i]);
 				term_print(&mat, mat.rows - 1, mat.col[i]);
@@ -319,3 +326,4 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
+

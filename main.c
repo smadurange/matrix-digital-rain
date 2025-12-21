@@ -1,12 +1,16 @@
 #include <locale.h>
+
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <uchar.h>
 #include <wchar.h>
 
 #define UNICODE_MIN 0x0021
@@ -51,7 +55,7 @@ typedef struct matrix_tag {
 	size_t *col;
 	size_t *row;
 	color *rgb;
-	wchar_t *code;
+	char32_t *code;
 } matrix;
 
 static size_t mat_idx(const matrix *mat, size_t row, size_t col)

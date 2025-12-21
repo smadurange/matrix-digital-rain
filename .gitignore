@@ -10,4 +10,4 @@ autom4te.cache/*
 
 **/*a.out
 **/*.swp
-**/vim.core
+**/*.core

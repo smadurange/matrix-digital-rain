@@ -16,7 +16,7 @@
 #define UNICODE_MIN 0x0021
 #define UNICODE_MAX 0x007E
 
-#define RHO         0.4 /* Rain density */
+#define RHO         0.5 /* Rain density */
 
 #define RGB_BG_RED   34 /* RGB values of the background */
 #define RGB_BG_GRN   34
@@ -147,11 +147,31 @@ static void mat_set_head(matrix *mat, size_t row, size_t col)
 	color[B] = RGB_HD_BLU;
 }
 
-static void mat_decay(matrix *mat, size_t row, size_t col)
+static uint8_t is_head(matrix *mat, size_t row, size_t col)
 {
+	size_t idx;
 	unsigned char *color;
 
-	color = mat->rgb[mat_idx(mat, row, col)].color;
+	idx = mat_idx(mat, row, col);
+	color = mat->rgb[idx].color;
+	return color[R] == RGB_HD_RED && color[G] == RGB_HD_GRN
+		&& color[B] == RGB_HD_BLU;
+}
+
+static void mat_decay(matrix *mat, size_t row, size_t col)
+{
+	size_t idx;
+	unsigned char *color;
+
+	idx = mat_idx(mat, row, col);
+	color = mat->rgb[idx].color;
+	
+	if (is_head(mat, row, col)) {
+		// Glitch, so reset head
+		mat_reset_head(mat, row, col);
+		return;
+	}
+
 	color[R] = color[R] - (color[R] - RGB_BG_RED) / 2;
 	color[G] = color[G] - (color[G] - RGB_BG_GRN) / 2;
 	color[B] = color[B] - (color[B] - RGB_BG_BLU) / 2;
@@ -218,6 +238,30 @@ static void term_print(const matrix *mat, size_t row, size_t col)
 	        mat->rgb[idx].color[B], mat->code[idx]);
 }
 
+static uint8_t is_tail(matrix *mat, size_t row, size_t col)
+{
+	size_t idx;
+	unsigned char *color;
+
+	idx = mat_idx(mat, row, col);
+	color = mat->rgb[idx].color;
+	return color[R] == RGB_TL_RED && color[G] == RGB_TL_GRN
+		&& color[B] == RGB_TL_BLU;
+}
+
+static void glitch(matrix *mat)
+{
+	size_t i, j, idx;
+	
+	i = rand() % (mat->rows - 1);
+	j = rand() % mat->cols;
+	idx = mat_idx(mat, i, j);
+	if (mat->code[idx] != ' ' && is_tail(mat, i, j)) {
+		mat_put_code(mat, i, j);
+		term_print(mat, i, j);
+	}
+}
+
 static volatile int run;
 
 static void handle_signal(int sa) 
@@ -279,15 +323,7 @@ int main(int argc, char *argv[])
 				mat_set_head(&mat, mat.row[i], mat.col[i]);
 				mat_put_code(&mat, mat.row[i], mat.col[i]);
 				term_print(&mat, mat.row[i], mat.col[i]);
-
-				if (mat.row[i] > 0 && rand() % 6 == 0) {
-					j = rand() % mat.row[i];
-					if (mat.code[mat_idx(&mat, j, mat.col[i])] != ' ') {
-						mat_put_code(&mat, j, mat.col[i]);
-						term_print(&mat, j, mat.col[i]);
-					}
-				}
-
+				
 				if (mat.row[i] == mat.rows - 1)
 					mat.rgb[i].color[M] = 1;
 
@@ -314,6 +350,8 @@ int main(int argc, char *argv[])
 				} else
 					mat.row[i]++;
 			}
+
+			glitch(&mat);
 		}
 
 		if (len < maxlen &&

@@ -64,7 +64,18 @@ static inline size_t index(const matrix *mat,
 	return mat->collen * row + col;
 }
 
-static inline void mat_put_code(matrix *mat,
+static inline void print(const matrix *mat,
+	size_t row, size_t col)
+{
+	size_t idx;
+
+	idx = index(mat, row, col);
+	wprintf(L"\x1b[%d;%dH\x1b[38;2;%d;%d;%dm%lc", row, col,
+	        mat->rgb[idx].color[R], mat->rgb[idx].color[G],
+	        mat->rgb[idx].color[B], mat->code[idx]);
+}
+
+static inline void insert_code(matrix *mat,
 	size_t row, size_t col) 
 {
 	mat->code[index(mat, row, col)] = rand()
@@ -84,7 +95,7 @@ static inline void shuffle(size_t *a, size_t n)
 	}
 }
 
-static int mat_init(matrix *mat, const struct winsize *ws)
+static int init_matrix(matrix *mat, const struct winsize *ws)
 {
 	size_t i;
 
@@ -120,20 +131,20 @@ static int mat_init(matrix *mat, const struct winsize *ws)
 	return 1;
 }
 
-static inline void mat_reset_head(matrix *mat,
+static inline void recolor_head(matrix *mat,
 	size_t row, size_t col) 
 {
 	unsigned char *sc, *tc;
 
 	sc = mat->rgb[index(mat, 0, col)].color;
 	tc = mat->rgb[index(mat, row, col)].color;
-
 	tc[R] = sc[R];
 	tc[G] = sc[G];
 	tc[B] = sc[B];
+	print(mat, row, col);
 }
 
-static inline void mat_set_tail(matrix *mat,
+static inline void draw_tail(matrix *mat,
 	size_t row, size_t col)
 {
 	unsigned char *color;
@@ -142,9 +153,10 @@ static inline void mat_set_tail(matrix *mat,
 	color[R] = RGB_TL_RED;
 	color[G] = RGB_TL_GRN;
 	color[B] = RGB_TL_BLU;
+	print(mat, row, col);
 }
 
-static inline void mat_set_head(matrix *mat,
+static inline void draw_head(matrix *mat,
 	size_t row, size_t col)
 {
 	unsigned char *color;
@@ -153,6 +165,15 @@ static inline void mat_set_head(matrix *mat,
 	color[R] = RGB_HD_RED;
 	color[G] = RGB_HD_GRN;
 	color[B] = RGB_HD_BLU;
+	insert_code(mat, row, col);
+	print(mat, row, col);
+}
+
+static inline void delete_code(matrix *mat,
+	size_t row, size_t col)
+{
+	mat->code[index(mat, row, col)] = ' ';
+	print(mat, row, col);
 }
 
 static inline void blend(matrix *mat,
@@ -166,6 +187,19 @@ static inline void blend(matrix *mat,
 	color[B] = color[B] - (color[B] - RGB_BG_BLU) / DECAY_MPLIER;
 }
 
+static inline void swap_col(matrix *mat, size_t i, size_t max)
+{
+	size_t j;
+
+	mat->row[i] = 0;
+	mat->rgb[i].color[PD] = 0;
+
+	j = rand() % (mat->collen - max) + max;
+	mat->col[i] = mat->col[i] ^ mat->col[j];
+	mat->col[j] = mat->col[i] ^ mat->col[j];
+	mat->col[i] = mat->col[i] ^ mat->col[j];
+}
+
 static inline void mat_free(matrix *mat)
 {
 	free(mat->code);
@@ -174,7 +208,7 @@ static inline void mat_free(matrix *mat)
 	free(mat->rgb);
 }
 
-static inline int term_init() 
+static inline int init_term() 
 {
 	struct termios ta;
 
@@ -217,17 +251,6 @@ static inline void term_size(const struct winsize *ws)
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, ws);
 }
 
-static inline void print(const matrix *mat,
-	size_t row, size_t col)
-{
-	size_t idx;
-
-	idx = index(mat, row, col);
-	wprintf(L"\x1b[%d;%dH\x1b[38;2;%d;%d;%dm%lc", row, col,
-	        mat->rgb[idx].color[R], mat->rgb[idx].color[G],
-	        mat->rgb[idx].color[B], mat->code[idx]);
-}
-
 static inline uint8_t is_tail(matrix *mat,
 	size_t row, size_t col)
 {
@@ -247,7 +270,7 @@ static inline void glitch(matrix *mat)
 	j = rand() % mat->collen;
 	if (mat->code[index(mat, i, j)] != ' ' 
 		&& is_tail(mat, i, j)) {
-		mat_put_code(mat, i, j);
+		insert_code(mat, i, j);
 		print(mat, i, j);
 	}
 }
@@ -281,13 +304,13 @@ int main(int argc, char *argv[])
 
 	srand(time(0));
 
-	if (!term_init())
+	if (!init_term())
 		return 1;
 
 	term_size(&ws);
 
 	mat = (matrix){0};
-	if (!mat_init(&mat, &ws)) {
+	if (!init_matrix(&mat, &ws)) {
 		term_reset();
 		return 1;
 	}
@@ -299,21 +322,14 @@ int main(int argc, char *argv[])
 	while (run) {
 		for (i = 0; run && i < n; i++) {
 			if (mat.row[i] == mat.rowlen) {
-				mat_reset_head(&mat,
-					mat.row[i] - 1, mat.col[i]);
-				print(&mat, mat.rowlen - 1, mat.col[i]);
+				recolor_head(&mat, mat.row[i] - 1, mat.col[i]);
 				mat.row[i] = 0;
 			}
 
 			if (mat.rgb[i].color[PD] == 0) {
-				if (mat.row[i] > 0) {
-					mat_set_tail(&mat,
-						mat.row[i] - 1, mat.col[i]);
-					print(&mat, mat.row[i] - 1, mat.col[i]);
-				}
-				mat_set_head(&mat, mat.row[i], mat.col[i]);
-				mat_put_code(&mat, mat.row[i], mat.col[i]);
-				print(&mat, mat.row[i], mat.col[i]);
+				if (mat.row[i] > 0)
+					draw_tail(&mat, mat.row[i] - 1, mat.col[i]);
+				draw_head(&mat, mat.row[i], mat.col[i]);
 				if (mat.row[i] == mat.rowlen - 1)
 					mat.rgb[i].color[PD] = 1;
 				mat.row[i]++;
@@ -325,25 +341,18 @@ int main(int argc, char *argv[])
 					mat.rgb[i].color[PD]++;
 				mat.row[i]++;
 			} else {
-				/* The track has fully faded. Reset the cells and
-				 * swap the column with one of the unused columns  */
-				mat.code[index(&mat, mat.row[i], mat.col[i])] = ' ';
-				print(&mat, mat.row[i], mat.col[i]);
-				if (mat.row[i] == mat.rowlen - 1) {
-					mat.row[i] = 0;
-					mat.rgb[i].color[PD] = 0;
-					j = rand() % (mat.collen - nmax) + nmax;
-					mat.col[i] = mat.col[i] ^ mat.col[j];
-					mat.col[j] = mat.col[i] ^ mat.col[j];
-					mat.col[i] = mat.col[i] ^ mat.col[j];
-				} else
+				delete_code(&mat, mat.row[i], mat.col[i]);
+				if (mat.row[i] == mat.rowlen - 1)
+					/* Track complete, start a new one. */
+					swap_col(&mat, i, nmax); 
+				else
 					mat.row[i]++;
 			}
 			glitch(&mat);
 		}
 
 		if (n < nmax &&
-			/* Track ramp up: add a new when the first track 
+			/* Track ramp up: add a new one when the first track 
 			 * exceeds a random distance beyond 25% of the screen
 			 * length. Do that until we reach the target density. */
 			mat.row[n - 1] >= rand() % (int)(mat.rowlen * 0.25)) {

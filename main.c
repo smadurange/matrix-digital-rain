@@ -36,7 +36,9 @@
 
 static uint64_t glyphs[] = {
 	((uint64_t)0x007E << 32) | 0x0021,  /* ASCII */
+#ifndef NOKANA
 	((uint64_t)0xFF9F << 32) | 0xFF65,  /* Half-width Katakana */
+#endif
 };
 
 static uint8_t glyphlen = (sizeof glyphs) / (sizeof glyphs[0]);

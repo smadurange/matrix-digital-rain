@@ -20,9 +20,9 @@ the following characteristics.
 
 ## Customisation
 
- - Character set: set `UNICODE_MIN` and `UNICODE_MAX` for the [unicode
-   block](https://en.wikipedia.org/wiki/List_of_Unicode_characters) you like to
-   use (e.g. 0x30A1 and 0x30F6 for Katakana: font ja-sazanami-ttf).
+ - Character set: add [unicode
+   blocks](https://en.wikipedia.org/wiki/List_of_Unicode_characters) (Katakana: font ja-sazanami-ttf).
+   you'd like to use to glyphs. ASCII and Katakana are included by default.
  - Colours: set the RGB values of `COLOR_BG_*`, `COLOR_HD_*` and `COLOR_TL_*`
    for background, head and the tail characters respectively.
  - Rain attributes: set `RAIN_RATE` and `RAIN_DENSITY` to change the speed and
@@ -30,5 +30,13 @@ the following characteristics.
 
 ## Building and Running
 
+With Katakana:
+
  $ cc -O3 main.c -o matrix
  $ ./matrix
+
+Without Katakana:
+
+ $ cc -O3 -DNOKANA main.c -o matrix
+ $ ./matrix
+

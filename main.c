@@ -34,10 +34,12 @@
 #define ANSI_FONT_RESET  "\x1b[0m"
 #define ANSI_SCRN_CLEAR  "\x1b[2J"
 
+#define UNICODE(min, max)  (((uint64_t)max << 32) | min)
+
 static uint64_t glyphs[] = {
-	((uint64_t)0x007E << 32) | 0x0021,  /* ASCII */
+    UNICODE(0x0021, 0x007E), /* ASCII */
 #ifndef NOKANA
-	((uint64_t)0xFF9F << 32) | 0xFF65,  /* Half-width Katakana */
+    UNICODE(0xFF65, 0xFF9F), /* Half-width Katakana */
 #endif
 };
 

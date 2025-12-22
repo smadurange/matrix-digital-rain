@@ -38,9 +38,9 @@
 #define ANSI_SCRN_CLEAR  "\x1b[2J"
 
 enum {
-	R,  /* Red */
+	R,  /* Red   */
 	G,  /* Green */
-	B,  /* Blue */ 
+	B,  /* Blue  */ 
 	PD  /* Phosphor decay multiplier */
 };
 
@@ -83,52 +83,11 @@ static inline void insert_code(matrix *mat,
 		+ UNICODE_MIN;
 }
 
-static inline void shuffle(size_t *a, size_t n) 
+static inline void delete_code(matrix *mat,
+	size_t row, size_t col)
 {
-	size_t i, j;
-
-	for (i = n - 1; i > 0; i--) {
-		j = rand() % (i + 1);
-		a[j] = a[i] ^ a[j];
-		a[i] = a[i] ^ a[j];
-		a[j] = a[i] ^ a[j];
-	}
-}
-
-static int init_matrix(matrix *mat, const struct winsize *ws)
-{
-	size_t i;
-
-	mat->collen = ws->ws_col;
-	mat->rowlen = ws->ws_row + 1;
-
-	mat->code = realloc(mat->code, 
-		sizeof mat->code[0] * mat->rowlen * mat->collen);
-	if (!mat->code)
-		return 0;
-
-	mat->rgb = realloc(mat->rgb,
-		sizeof mat->rgb[0] * mat->rowlen * mat->collen);
-	if (!mat->rgb)
-		return 0;
-
-	mat->col = realloc(mat->col,
-		sizeof mat->col[0] * mat->collen);
-	if (!mat->col)
-		return 0;
-
-	mat->row = realloc(mat->row,
-		sizeof mat->row[0] * mat->collen);
-	if (!mat->row)
-		return 0;
-
-	for (i = 0; i < mat->collen; i++) {
-		mat->row[i] = 0;
-		mat->col[i] = i;
-	}
-
-	shuffle(mat->col, mat->collen);
-	return 1;
+	mat->code[index(mat, row, col)] = ' ';
+	print(mat, row, col);
 }
 
 static inline void recolor_head(matrix *mat,
@@ -165,14 +124,8 @@ static inline void draw_head(matrix *mat,
 	color[R] = RGB_HD_RED;
 	color[G] = RGB_HD_GRN;
 	color[B] = RGB_HD_BLU;
-	insert_code(mat, row, col);
-	print(mat, row, col);
-}
 
-static inline void delete_code(matrix *mat,
-	size_t row, size_t col)
-{
-	mat->code[index(mat, row, col)] = ' ';
+	insert_code(mat, row, col);
 	print(mat, row, col);
 }
 
@@ -200,7 +153,80 @@ static inline void swap_col(matrix *mat, size_t i, size_t max)
 	mat->col[i] = mat->col[i] ^ mat->col[j];
 }
 
-static inline void mat_free(matrix *mat)
+static inline uint8_t is_tail(matrix *mat,
+	size_t row, size_t col)
+{
+	unsigned char *color;
+
+	color = mat->rgb[index(mat, row, col)].color;
+	return color[R] == RGB_TL_RED 
+		&& color[G] == RGB_TL_GRN
+		&& color[B] == RGB_TL_BLU;
+}
+
+static inline void glitch(matrix *mat)
+{
+	size_t i, j;
+	
+	i = rand() % (mat->rowlen - 1);
+	j = rand() % mat->collen;
+	if (mat->code[index(mat, i, j)] != ' ' 
+		&& is_tail(mat, i, j)) {
+		insert_code(mat, i, j);
+		print(mat, i, j);
+	}
+}
+
+static inline void shuffle(size_t *a, size_t n) 
+{
+	size_t i, j;
+
+	for (i = n - 1; i > 0; i--) {
+		j = rand() % (i + 1);
+		a[j] = a[i] ^ a[j];
+		a[i] = a[i] ^ a[j];
+		a[j] = a[i] ^ a[j];
+	}
+}
+
+static inline int init_matrix(matrix *mat,
+	const struct winsize *ws)
+{
+	size_t i;
+
+	mat->collen = ws->ws_col;
+	mat->rowlen = ws->ws_row + 1;
+
+	mat->code = realloc(mat->code, 
+		sizeof mat->code[0] * mat->rowlen * mat->collen);
+	if (!mat->code)
+		return 0;
+
+	mat->rgb = realloc(mat->rgb,
+		sizeof mat->rgb[0] * mat->rowlen * mat->collen);
+	if (!mat->rgb)
+		return 0;
+
+	mat->col = realloc(mat->col,
+		sizeof mat->col[0] * mat->collen);
+	if (!mat->col)
+		return 0;
+
+	mat->row = realloc(mat->row,
+		sizeof mat->row[0] * mat->collen);
+	if (!mat->row)
+		return 0;
+
+	for (i = 0; i < mat->collen; i++) {
+		mat->row[i] = 0;
+		mat->col[i] = i;
+	}
+
+	shuffle(mat->col, mat->collen);
+	return 1;
+}
+
+static inline void destroy_matrix(matrix *mat)
 {
 	free(mat->code);
 	free(mat->col);
@@ -229,7 +255,7 @@ static inline int init_term()
 	return 0;
 }
 
-static inline void term_reset()
+static inline void reset_term()
 {
 	struct termios ta;
 
@@ -241,7 +267,7 @@ static inline void term_reset()
 	if (tcgetattr(STDIN_FILENO, &ta) == 0) {
 		ta.c_lflag |= ECHO;
 		if (tcsetattr(STDIN_FILENO, TCSANOW, &ta) != 0)
-			perror("term_reset()");
+			perror("reset_term()");
 	}
 	setvbuf(stdout, 0, _IOLBF, 0);
 }
@@ -249,30 +275,6 @@ static inline void term_reset()
 static inline void term_size(const struct winsize *ws)
 {
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, ws);
-}
-
-static inline uint8_t is_tail(matrix *mat,
-	size_t row, size_t col)
-{
-	unsigned char *color;
-
-	color = mat->rgb[index(mat, row, col)].color;
-	return color[R] == RGB_TL_RED 
-		&& color[G] == RGB_TL_GRN
-		&& color[B] == RGB_TL_BLU;
-}
-
-static inline void glitch(matrix *mat)
-{
-	size_t i, j;
-	
-	i = rand() % (mat->rowlen - 1);
-	j = rand() % mat->collen;
-	if (mat->code[index(mat, i, j)] != ' ' 
-		&& is_tail(mat, i, j)) {
-		insert_code(mat, i, j);
-		print(mat, i, j);
-	}
 }
 
 static volatile int run;
@@ -311,7 +313,7 @@ int main(int argc, char *argv[])
 
 	mat = (matrix){0};
 	if (!init_matrix(&mat, &ws)) {
-		term_reset();
+		reset_term();
 		return 1;
 	}
 
@@ -363,9 +365,8 @@ int main(int argc, char *argv[])
 		usleep(DELAY_US);
 	}
 
-	term_reset();
-	mat_free(&mat);
-
+	reset_term();
+	destroy_matrix(&mat);
 	return 0;
 }
 

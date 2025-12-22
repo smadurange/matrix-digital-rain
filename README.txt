@@ -1,11 +1,9 @@
-# Matrix Digital Rain
+MATRIX DIGITAL RAIN
 
-Pure C implementation of the famous [digital
-rain](https://en.wikipedia.org/wiki/Matrix_digital_rain) effect from _The
-Matrix_ series for Linux inspired by
-[fakesteak](https://github.com/domsson/fakesteak). While trying to keep the
-simplicity and lightweightness of fakesteak as much as possible, I have added
-the following characteristics.
+Pure C implementation of the famous digital rain effect from The Matrix,
+inspired [fakesteak](https://github.com/domsson/fakesteak). While trying to
+keep the simplicity and lightweightness of fakesteak as much as possible, I
+have added the following characteristics.
 
  - Simulation pattern is closer to the one seen during Neo and Cypher's
    conversation in the first Matrix movie.
@@ -13,22 +11,21 @@ the following characteristics.
  - Truecolor support.
  - Unicode support.
 
-## Requirements and Dependencies
+REQUIREMENTS
 
  - Terminal emulator with support for 24-bit RGB colours and unicode
    characters.
 
-## Customisation
+CUSTOMISATION
 
  - Character set: add [unicode
    blocks](https://en.wikipedia.org/wiki/List_of_Unicode_characters) (Katakana: font ja-sazanami-ttf).
    you'd like to use to glyphs. ASCII and Katakana are included by default.
  - Colours: set the RGB values of `COLOR_BG_*`, `COLOR_HD_*` and `COLOR_TL_*`
    for background, head and the tail characters respectively.
- - Rain attributes: set `RAIN_RATE` and `RAIN_DENSITY` to change the speed and
-   the density of the rain. 
+ - Rain attributes: set `RHO` to change the density of the rain. 
 
-## Building and Running
+BUILDING AND RUNNING
 
 With Katakana:
 

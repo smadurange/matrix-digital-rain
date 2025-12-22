@@ -234,7 +234,7 @@ static inline void destroy_matrix(matrix *mat)
 	free(mat->rgb);
 }
 
-static inline int init_term() 
+static inline int init_term(const struct winsize *ws) 
 {
 	struct termios ta;
 
@@ -247,8 +247,8 @@ static inline int init_term()
 			wprintf(L"%s", ANSI_CRSR_HIDE);
 			wprintf(L"%s", ANSI_CRSR_RESET);
 			wprintf(L"%s", ANSI_SCRN_CLEAR);
-
 			setvbuf(stdout, 0, _IOFBF, 0);
+			ioctl(STDOUT_FILENO, TIOCGWINSZ, ws);
 			return 1;
 		}
 	}
@@ -270,11 +270,6 @@ static inline void reset_term()
 			perror("reset_term()");
 	}
 	setvbuf(stdout, 0, _IOLBF, 0);
-}
-
-static inline void term_size(const struct winsize *ws)
-{
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, ws);
 }
 
 static volatile int run;
@@ -306,10 +301,8 @@ int main(int argc, char *argv[])
 
 	srand(time(0));
 
-	if (!init_term())
+	if (!init_term(&ws))
 		return 1;
-
-	term_size(&ws);
 
 	mat = (matrix){0};
 	if (!init_matrix(&mat, &ws)) {

@@ -10,8 +10,8 @@
 #include <wchar.h>
 #include <sys/ioctl.h>
 
-#define UNICODE_MIN  0x0021
-#define UNICODE_MAX  0x007E
+#define UNICODE_MIN  0x0021  /* Beginning of Unicode block: Katakana: 0x30A1 */
+#define UNICODE_MAX  0x007E  /* End of Unicode block: Katakana: 0x30F6 */
 
 #define RHO             0.5  /* Rain density: (0, 1) */
 
@@ -30,9 +30,9 @@
 #define DECAY_MPLIER      2  /* Phosphor decay multiplier */
 #define DELAY_US      60000  /* Delay between frames: increase to slow the rain */
 
-#define ANSI_CUR_HIDE    "\e[?25l"
-#define ANSI_CUR_SHOW    "\e[?25h"
-#define ANSI_CUR_RESET   "\x1b[H"
+#define ANSI_CRSR_HIDE   "\e[?25l"
+#define ANSI_CRSR_SHOW   "\e[?25h"
+#define ANSI_CRSR_RESET  "\x1b[H"
 #define ANSI_FONT_BOLD   "\x1b[1m"
 #define ANSI_FONT_RESET  "\x1b[0m"
 #define ANSI_SCRN_CLEAR  "\x1b[2J"
@@ -50,12 +50,12 @@ typedef union color_tag {
 } color;
 
 typedef struct matrix_tag {
-	size_t rowlen;
-	size_t collen;
-	size_t *col;
-	size_t *row;
-	color *rgb;
-	char32_t *code;
+	size_t rowlen;   /* Row count: terminal screen height */
+	size_t collen;   /* Column count: terminal screen width */
+	size_t *col;     /* Column indices in random order (shuffle()) */
+	size_t *row;     /* Current row index of columns: 1-1 map with col */
+	color *rgb;      /* RGB color of the cell */
+	char32_t *code;  /* Code point */
 } matrix;
 
 static inline size_t index(const matrix *mat,
@@ -184,8 +184,8 @@ static inline int term_init()
 			wprintf(L"\x1b[48;2;%d;%d;%dm", 
 				RGB_BG_RED, RGB_BG_GRN, RGB_BG_BLU);
 			wprintf(L"%s", ANSI_FONT_BOLD);
-			wprintf(L"%s", ANSI_CUR_HIDE);
-			wprintf(L"%s", ANSI_CUR_RESET);
+			wprintf(L"%s", ANSI_CRSR_HIDE);
+			wprintf(L"%s", ANSI_CRSR_RESET);
 			wprintf(L"%s", ANSI_SCRN_CLEAR);
 
 			setvbuf(stdout, 0, _IOFBF, 0);
@@ -200,9 +200,9 @@ static inline void term_reset()
 	struct termios ta;
 
 	wprintf(L"%s", ANSI_FONT_RESET);
-	wprintf(L"%s", ANSI_CUR_SHOW);
+	wprintf(L"%s", ANSI_CRSR_SHOW);
 	wprintf(L"%s", ANSI_SCRN_CLEAR);
-	wprintf(L"%s", ANSI_CUR_RESET);
+	wprintf(L"%s", ANSI_CRSR_RESET);
 
 	if (tcgetattr(STDIN_FILENO, &ta) == 0) {
 		ta.c_lflag |= ECHO;

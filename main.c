@@ -49,8 +49,6 @@ typedef union color_tag {
 typedef struct matrix_tag {
 	size_t rowlen;
 	size_t collen;
-	size_t *col;
-	size_t *row;
 	color *rgb;
 	char32_t *code;
 } matrix;
@@ -98,22 +96,6 @@ static int mat_init(matrix *mat, const struct winsize *ws)
 	if (!mat->rgb)
 		return 0;
 
-	mat->col = realloc(mat->col,
-		sizeof mat->col[0] * mat->collen);
-	if (!mat->col)
-		return 0;
-
-	mat->row = realloc(mat->row,
-		sizeof mat->row[0] * mat->collen);
-	if (!mat->row)
-		return 0;
-
-	for (i = 0; i < mat->collen; i++) {
-		mat->row[i] = 0;
-		mat->col[i] = i;
-	}
-
-	shuffle(mat->col, mat->collen);
 	return 1;
 }
 
@@ -168,8 +150,6 @@ static inline void fade(matrix *mat,
 static inline void mat_free(matrix *mat)
 {
 	free(mat->code);
-	free(mat->col);
-	free(mat->row);
 	free(mat->rgb);
 }
 
@@ -269,6 +249,7 @@ int main(int argc, char *argv[])
 	matrix mat;
 	struct winsize ws;
 	struct sigaction sa;
+	size_t *cols, *rows;
 	size_t i, j, len, maxlen;
 
 	setlocale(LC_CTYPE, "");
@@ -294,58 +275,77 @@ int main(int argc, char *argv[])
 	run = 1, len = 1;
 	maxlen = mat.collen * RHO;
 
+	cols = malloc(sizeof cols[0] * mat.collen);
+	if (!cols) {
+		term_reset();
+		return 1;
+	}
+
+	rows = malloc(sizeof rows[0] * mat.collen);
+	if (!rows) {
+		term_reset();
+		return 1;
+	}
+
+	for (i = 0; i < mat.collen; i++) {
+		rows[i] = 0;
+		cols[i] = i;
+	}
+
+	shuffle(cols, mat.collen);
+
 	while (run) {
 		for (i = 0; run && i < len; i++) {
-			if (mat.row[i] == mat.rowlen) {
+			if (rows[i] == mat.rowlen) {
 				mat_reset_head(&mat,
-					mat.row[i] - 1, mat.col[i]);
-				print(&mat, mat.rowlen - 1, mat.col[i]);
-				mat.row[i] = 0;
+					rows[i] - 1, cols[i]);
+				print(&mat, mat.rowlen - 1, cols[i]);
+				rows[i] = 0;
 			}
 
 			if (mat.rgb[i].color[A] == 0) {
-				if (mat.row[i] > 0) {
+				if (rows[i] > 0) {
 					mat_set_tail(&mat,
-						mat.row[i] - 1, mat.col[i]);
-					print(&mat, mat.row[i] - 1, mat.col[i]);
+						rows[i] - 1, cols[i]);
+					print(&mat, rows[i] - 1, cols[i]);
 				}
 
-				mat_set_head(&mat, mat.row[i], mat.col[i]);
-				mat_put_code(&mat, mat.row[i], mat.col[i]);
-				print(&mat, mat.row[i], mat.col[i]);
+				mat_set_head(&mat, rows[i], cols[i]);
+				mat_put_code(&mat, rows[i], cols[i]);
+				print(&mat, rows[i], cols[i]);
 				
-				if (mat.row[i] == mat.rowlen - 1)
+				if (rows[i] == mat.rowlen - 1)
 					mat.rgb[i].color[A] = 1;
-				mat.row[i]++;
+				rows[i]++;
 			} else if (mat.rgb[i].color[A] == 1
 				|| mat.rgb[i].color[A] == 2) {
-				fade(&mat, mat.row[i], mat.col[i]);
-				print(&mat, mat.row[i], mat.col[i]);
+				fade(&mat, rows[i], cols[i]);
+				print(&mat, rows[i], cols[i]);
 
-				if (mat.row[i] == mat.rowlen - 1)
+				if (rows[i] == mat.rowlen - 1)
 					mat.rgb[i].color[A]++;
-				mat.row[i]++;
+				rows[i]++;
 			} else {
-				mat.code[index(&mat, mat.row[i], mat.col[i])] = ' ';
-				print(&mat, mat.row[i], mat.col[i]);
+				mat.code[index(&mat, rows[i], cols[i])] = ' ';
+				print(&mat, rows[i], cols[i]);
 
-				if (mat.row[i] == mat.rowlen - 1) {
-					mat.row[i] = 0;
+				if (rows[i] == mat.rowlen - 1) {
+					rows[i] = 0;
 					mat.rgb[i].color[A] = 0;
 					j = rand() % (mat.collen - maxlen) + maxlen;
-					mat.col[i] = mat.col[i] ^ mat.col[j];
-					mat.col[j] = mat.col[i] ^ mat.col[j];
-					mat.col[i] = mat.col[i] ^ mat.col[j];
+					cols[i] = cols[i] ^ cols[j];
+					cols[j] = cols[i] ^ cols[j];
+					cols[i] = cols[i] ^ cols[j];
 				} else
-					mat.row[i]++;
+					rows[i]++;
 			}
 
 			glitch(&mat);
 		}
 
 		if (len < maxlen &&
-		    mat.row[len - 1] >= rand() % (int)(mat.rowlen * 0.25)) {
-			mat.row[len++] = 0;
+		    rows[len - 1] >= rand() % (int)(mat.rowlen * 0.25)) {
+			rows[len++] = 0;
 		}
 
 		fflush(stdout);
@@ -354,6 +354,8 @@ int main(int argc, char *argv[])
 
 	term_reset();
 	mat_free(&mat);
+	free(cols);
+	free(rows);
 
 	return 0;
 }

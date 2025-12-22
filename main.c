@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
 	matrix mat;
 	struct winsize ws;
 	struct sigaction sa;
-	size_t i, j, len, maxlen;
+	size_t i, j, n, nmax;
 
 	setlocale(LC_CTYPE, "");
 
@@ -291,11 +291,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	run = 1, len = 1;
-	maxlen = mat.collen * RHO;
+	run = 1; 
+	n = 1;  /* Used to ramp up the tracks from 1 to nmax to stagger the tracks. */
+	nmax = mat.collen * RHO;  /* Number of rain tracks. */
 
 	while (run) {
-		for (i = 0; run && i < len; i++) {
+		for (i = 0; run && i < n; i++) {
 			if (mat.row[i] == mat.rowlen) {
 				mat_reset_head(&mat,
 					mat.row[i] - 1, mat.col[i]);
@@ -332,7 +333,7 @@ int main(int argc, char *argv[])
 				if (mat.row[i] == mat.rowlen - 1) {
 					mat.row[i] = 0;
 					mat.rgb[i].color[A] = 0;
-					j = rand() % (mat.collen - maxlen) + maxlen;
+					j = rand() % (mat.collen - nmax) + nmax;
 					mat.col[i] = mat.col[i] ^ mat.col[j];
 					mat.col[j] = mat.col[i] ^ mat.col[j];
 					mat.col[i] = mat.col[i] ^ mat.col[j];
@@ -343,9 +344,11 @@ int main(int argc, char *argv[])
 			glitch(&mat);
 		}
 
-		if (len < maxlen &&
-		    mat.row[len - 1] >= rand() % (int)(mat.rowlen * 0.25)) {
-			mat.row[len++] = 0;
+		if (n < nmax &&
+			/* Track ramp up: when the first track exceeds 25% of the
+		 	 * screen length, add new tracks at random heights. */
+			mat.row[n - 1] >= rand() % (int)(mat.rowlen * 0.25)) {
+			mat.row[n++] = 0;
 		}
 
 		fflush(stdout);

@@ -28,6 +28,7 @@
 #define RGB_TL_BLU       64
 
 #define DECAY_MPLIER      2  /* Phosphor decay multiplier */
+#define DELAY_US      60000  /* Delay between frames: increase to slow the rain */
 
 #define ANSI_CUR_HIDE    "\e[?25l"
 #define ANSI_CUR_SHOW    "\e[?25h"
@@ -37,10 +38,10 @@
 #define ANSI_SCRN_CLEAR  "\x1b[2J"
 
 enum {
-	R,  /* Red          */
-	G,  /* Green        */
-	B,  /* Blue         */ 
-	A   /* Transparency */
+	R,  /* Red */
+	G,  /* Green */
+	B,  /* Blue */ 
+	PD  /* Phosphor decay multiplier */
 };
 
 typedef union color_tag {
@@ -238,7 +239,7 @@ static inline uint8_t is_tail(matrix *mat,
 		&& color[B] == RGB_TL_BLU;
 }
 
-static void glitch(matrix *mat)
+static inline void glitch(matrix *mat)
 {
 	size_t i, j;
 	
@@ -304,7 +305,7 @@ int main(int argc, char *argv[])
 				mat.row[i] = 0;
 			}
 
-			if (mat.rgb[i].color[A] == 0) {
+			if (mat.rgb[i].color[PD] == 0) {
 				if (mat.row[i] > 0) {
 					mat_set_tail(&mat,
 						mat.row[i] - 1, mat.col[i]);
@@ -314,14 +315,14 @@ int main(int argc, char *argv[])
 				mat_put_code(&mat, mat.row[i], mat.col[i]);
 				print(&mat, mat.row[i], mat.col[i]);
 				if (mat.row[i] == mat.rowlen - 1)
-					mat.rgb[i].color[A] = 1;
+					mat.rgb[i].color[PD] = 1;
 				mat.row[i]++;
-			} else if (mat.rgb[i].color[A] > 0 &&
-				mat.rgb[i].color[A] <= DECAY_MPLIER) {
+			} else if (mat.rgb[i].color[PD] > 0 &&
+				mat.rgb[i].color[PD] <= DECAY_MPLIER) {
 				blend(&mat, mat.row[i], mat.col[i]);
 				print(&mat, mat.row[i], mat.col[i]);
 				if (mat.row[i] == mat.rowlen - 1)
-					mat.rgb[i].color[A]++;
+					mat.rgb[i].color[PD]++;
 				mat.row[i]++;
 			} else {
 				/* The track has fully faded. Reset the cells and
@@ -330,7 +331,7 @@ int main(int argc, char *argv[])
 				print(&mat, mat.row[i], mat.col[i]);
 				if (mat.row[i] == mat.rowlen - 1) {
 					mat.row[i] = 0;
-					mat.rgb[i].color[A] = 0;
+					mat.rgb[i].color[PD] = 0;
 					j = rand() % (mat.collen - nmax) + nmax;
 					mat.col[i] = mat.col[i] ^ mat.col[j];
 					mat.col[j] = mat.col[i] ^ mat.col[j];
@@ -350,7 +351,7 @@ int main(int argc, char *argv[])
 		}
 
 		fflush(stdout);
-		usleep(50000);
+		usleep(DELAY_US);
 	}
 
 	term_reset();

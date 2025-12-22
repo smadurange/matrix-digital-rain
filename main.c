@@ -27,6 +27,8 @@
 #define RGB_TL_GRN      177
 #define RGB_TL_BLU       64
 
+#define DECAY_MPLIER      2  /* Phosphor decay multiplier */
+
 #define ANSI_CUR_HIDE    "\e[?25l"
 #define ANSI_CUR_SHOW    "\e[?25h"
 #define ANSI_CUR_RESET   "\x1b[H"
@@ -152,17 +154,15 @@ static inline void mat_set_head(matrix *mat,
 	color[B] = RGB_HD_BLU;
 }
 
-static inline void fade(matrix *mat,
+static inline void blend(matrix *mat,
 	size_t row, size_t col)
 {
-	size_t idx;
 	unsigned char *color;
 
-	idx = index(mat, row, col);
-	color = mat->rgb[idx].color;
-	color[R] = color[R] - (color[R] - RGB_BG_RED) / 2;
-	color[G] = color[G] - (color[G] - RGB_BG_GRN) / 2;
-	color[B] = color[B] - (color[B] - RGB_BG_BLU) / 2;
+	color = mat->rgb[index(mat, row, col)].color;
+	color[R] = color[R] - (color[R] - RGB_BG_RED) / DECAY_MPLIER;
+	color[G] = color[G] - (color[G] - RGB_BG_GRN) / DECAY_MPLIER;
+	color[B] = color[B] - (color[B] - RGB_BG_BLU) / DECAY_MPLIER;
 }
 
 static inline void mat_free(matrix *mat)
@@ -310,26 +310,24 @@ int main(int argc, char *argv[])
 						mat.row[i] - 1, mat.col[i]);
 					print(&mat, mat.row[i] - 1, mat.col[i]);
 				}
-
 				mat_set_head(&mat, mat.row[i], mat.col[i]);
 				mat_put_code(&mat, mat.row[i], mat.col[i]);
 				print(&mat, mat.row[i], mat.col[i]);
-				
 				if (mat.row[i] == mat.rowlen - 1)
 					mat.rgb[i].color[A] = 1;
 				mat.row[i]++;
-			} else if (mat.rgb[i].color[A] == 1
-				|| mat.rgb[i].color[A] == 2) {
-				fade(&mat, mat.row[i], mat.col[i]);
+			} else if (mat.rgb[i].color[A] > 0 &&
+				mat.rgb[i].color[A] <= DECAY_MPLIER) {
+				blend(&mat, mat.row[i], mat.col[i]);
 				print(&mat, mat.row[i], mat.col[i]);
-
 				if (mat.row[i] == mat.rowlen - 1)
 					mat.rgb[i].color[A]++;
 				mat.row[i]++;
 			} else {
+				/* The track has fully faded. Reset the cells and
+				 * swap the column with one of the unused columns  */
 				mat.code[index(&mat, mat.row[i], mat.col[i])] = ' ';
 				print(&mat, mat.row[i], mat.col[i]);
-
 				if (mat.row[i] == mat.rowlen - 1) {
 					mat.row[i] = 0;
 					mat.rgb[i].color[A] = 0;
@@ -340,13 +338,13 @@ int main(int argc, char *argv[])
 				} else
 					mat.row[i]++;
 			}
-
 			glitch(&mat);
 		}
 
 		if (n < nmax &&
-			/* Track ramp up: when the first track exceeds 25% of the
-		 	 * screen length, add new tracks at random heights. */
+			/* Track ramp up: add a new when the first track 
+			 * exceeds a random distance beyond 25% of the screen
+			 * length. Do that until we reach the target density. */
 			mat.row[n - 1] >= rand() % (int)(mat.rowlen * 0.25)) {
 			mat.row[n++] = 0;
 		}

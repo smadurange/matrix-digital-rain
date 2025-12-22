@@ -10,7 +10,7 @@
 #include <wchar.h>
 #include <sys/ioctl.h>
 
-#define RHO             0.5  /* Rain density: (0, 1) */
+#define RHO             0.7  /* Rain density: (0, 1) */
 
 #define RGB_BG_RED       34  /* Background color */
 #define RGB_BG_GRN       34
@@ -20,9 +20,9 @@
 #define RGB_HD_GRN      255
 #define RGB_HD_BLU      255
 
-#define RGB_TL_RED        0  /* Color of the rain */
-#define RGB_TL_GRN      177
-#define RGB_TL_BLU       64
+#define RGB_TL_RED       40  /* Color of the rain */
+#define RGB_TL_GRN      254
+#define RGB_TL_BLU       20
 
 #define DECAY_MPLIER      2  /* Phosphor decay multiplier */
 #define DELAY_US      60000  /* Delay between frames: increase to slow the rain */

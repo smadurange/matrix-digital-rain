@@ -10,9 +10,6 @@
 #include <wchar.h>
 #include <sys/ioctl.h>
 
-#define UNICODE_MIN  0x0021  /* Beginning of Unicode block: Katakana: 0x30A1 */
-#define UNICODE_MAX  0x007E  /* End of Unicode block: Katakana: 0x30F6 */
-
 #define RHO             0.5  /* Rain density: (0, 1) */
 
 #define RGB_BG_RED       34  /* Background color */
@@ -36,6 +33,13 @@
 #define ANSI_FONT_BOLD   "\x1b[1m"
 #define ANSI_FONT_RESET  "\x1b[0m"
 #define ANSI_SCRN_CLEAR  "\x1b[2J"
+
+static uint64_t glyphs[] = {
+	((uint64_t)0x007E << 32) | 0x0021,  /* ASCII */
+	((uint64_t)0xFF9F << 32) | 0xFF65,  /* Half-width Katakana */
+};
+
+static uint8_t glyphlen = (sizeof glyphs) / (sizeof glyphs[0]);
 
 enum {
 	R,  /* Red   */
@@ -78,9 +82,16 @@ static inline void print(const matrix *mat,
 static inline void insert_code(matrix *mat,
 	size_t row, size_t col) 
 {
+	uint64_t block;
+	uint32_t unicode_min, unicode_max;
+
+	block = glyphs[(rand() % glyphlen)];
+	unicode_min = (uint32_t)block;
+	unicode_max = (uint32_t)(block >> 32);
+
 	mat->code[index(mat, row, col)] = rand()
-		% (UNICODE_MAX - UNICODE_MIN)
-		+ UNICODE_MIN;
+		% (unicode_max - unicode_min)
+		+ unicode_min;
 }
 
 static inline void delete_code(matrix *mat,

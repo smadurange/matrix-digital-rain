@@ -22,7 +22,7 @@ the following characteristics.
 
  - Character set: set `UNICODE_MIN` and `UNICODE_MAX` for the [unicode
    block](https://en.wikipedia.org/wiki/List_of_Unicode_characters) you like to
-   use (e.g. 0x30A1 and 0x30F6 for Katakana):
+   use (e.g. 0x30A1 and 0x30F6 for Katakana: font ja-sazanami-ttf).
  - Colours: set the RGB values of `COLOR_BG_*`, `COLOR_HD_*` and `COLOR_TL_*`
    for background, head and the tail characters respectively.
  - Rain attributes: set `RAIN_RATE` and `RAIN_DENSITY` to change the speed and

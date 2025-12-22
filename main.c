@@ -356,8 +356,7 @@ int main(int argc, char *argv[])
 
 		if (len < maxlen &&
 		    mat.row[len - 1] >= rand() % (int)(mat.rows * 0.25)) {
-			mat.row[len] = 0;
-			mat.rgb[len++].color[M] = 0;
+			mat.row[len++] = 0;
 		}
 
 		fflush(stdout);
